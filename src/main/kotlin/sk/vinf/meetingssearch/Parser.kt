@@ -1,6 +1,7 @@
 package sk.vinf.meetingssearch
 
 import java.io.File
+import java.util.regex.Pattern
 import javax.xml.stream.XMLStreamReader
 
 object Parser {
@@ -28,7 +29,7 @@ fun parseFile(file: File) {
         }
         onTagEnd("text") {
 
-            val matcher = infoboxRegex.matcher(processedText)
+            val matcher = infoBoxRegex.matcher(processedText)
 
             if (matcher.find()) {
                 val infobox = matcher.group()
@@ -65,21 +66,21 @@ class Person {
     private fun getPersonName(): String {
         var parsedName = name
         parsedName = parsedName.substringAfter("=")
-        return parsedName.trim()
+        return parsedName.removeComments().removeReferences().trim()
     }
 
     private fun getBirthDay(): String {
         //TODO This will later be turned to timestamp
         var parsedBirthDay = birthDate
         parsedBirthDay = parsedBirthDay.substringAfter("=")
-        return parsedBirthDay.trim()
+        return parsedBirthDay.removeComments().removeReferences().trim()
     }
 
     private fun getDeathDay(): String {
         //TODO This will later be turned to timestamp
         var parsedDeathDate = deathDate
         parsedDeathDate = parsedDeathDate.substringAfter("=")
-        return parsedDeathDate.trim()
+        return parsedDeathDate.removeComments().removeReferences().trim()
     }
 
     fun isValid() = getPersonName().isNotEmpty() && getBirthDay().isNotEmpty()
@@ -96,4 +97,20 @@ class Person {
         append(" | ")
         append(deathDay)
     }.toString()
+}
+
+fun String.removePattern(pattern: com.florianingerl.util.regex.Pattern): String {
+    val matcher = pattern.matcher(this)
+    if (matcher.find()) {
+        return this.replace(matcher.group(), "").removePattern(pattern)
+    }
+    return this
+}
+
+fun String.removeReferences(): String {
+    return removePattern(referencesRegex)
+}
+
+fun String.removeComments(): String {
+    return removePattern(commentsRegex)
 }
